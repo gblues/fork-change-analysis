@@ -8,12 +8,12 @@
       arm)
         # Valid TARGET_CPU for Raspberry Pi based devices are:
         # arm1176jzf-s cortex-a7 cortex-a53
-        if [ "$DEVICE" = "RPi" -o "$DEVICE" = "Slice" ]; then
+        if [ "$DEVICE" = "RPi" -o "$DEVICE" = "Slice" -o "$DEVICE" = "Gamegirl" -o "$DEVICE" = "GPICase" ]; then
           TARGET_CPU="arm1176jzf-s"
         elif [ "$DEVICE" = "RPi2" -o "$DEVICE" = "Slice3" ]; then
           TARGET_CPU="cortex-a7"
         elif [ "$DEVICE" = "RPi4" ]; then
-          TARGET_CPU="cortex-a53"
+          TARGET_CPU="cortex-a72"
           TARGET_CPU_FLAGS="+crc"
         fi
 
@@ -26,7 +26,7 @@
         # This specifies what floating point hardware (or hardware emulation) is
         # available on the target. Permissible names are:
         # vfp neon-vfpv4 neon-fp-armv8
-        if [ "$DEVICE" = "RPi" -o "$DEVICE" = "Slice" ]; then
+        if [ "$DEVICE" = "RPi" -o "$DEVICE" = "Slice" -o "$DEVICE" = "Gamegirl" -o "$DEVICE" = "GPICase" ]; then
           TARGET_FPU="vfp"
         elif [ "$DEVICE" = "RPi2" -o "$DEVICE" = "Slice3" ]; then
           TARGET_FPU="neon-vfpv4"
@@ -107,6 +107,10 @@
   # e.g. FIRMWARE="dvb-firmware misc-firmware wlan-firmware"
     FIRMWARE="misc-firmware wlan-firmware dvb-firmware brcmfmac_sdio-firmware-rpi"
 
+    if [ "$DISTRO" = "Lakka" ]; then
+      FIRMWARE="misc-firmware wlan-firmware brcmfmac_sdio-firmware-rpi"
+    fi
+
   # build with installer (yes / no)
     INSTALLER_SUPPORT="no"
 
@@ -130,6 +134,10 @@
   # for a list of additional drivers see packages/linux-driver-addons
   # Space separated list is supported,
     DRIVER_ADDONS="crazycat dvb-latest"
+
+    if [ "$DISTRO" = "Lakka" ]; then
+      DRIVER_ADDONS=""
+    fi
 
   # debug tty path
     DEBUG_TTY="/dev/console"

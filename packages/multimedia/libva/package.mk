@@ -5,7 +5,7 @@
 PKG_NAME="libva"
 PKG_VERSION="2.5.0"
 PKG_SHA256="9b6264dade6b6d3edb59c6c4f3c9217d1d5a195635fc07da875d565f58624418"
-PKG_ARCH="x86_64"
+PKG_ARCH="i386 x86_64"
 PKG_LICENSE="GPL"
 PKG_SITE="https://01.org/linuxmedia"
 PKG_URL="https://github.com/intel/libva/archive/$PKG_VERSION.tar.gz"
@@ -18,10 +18,14 @@ if [ "$DISPLAYSERVER" = "x11" ]; then
 elif [ "$DISPLAYSERVER" = "weston" ]; then
   DISPLAYSERVER_LIBVA="--disable-x11 --disable-glx --enable-wayland"
   PKG_DEPENDS_TARGET="toolchain libdrm wayland"
+elif [ "$DISTRO" = "Lakka" ]; then
+  PKG_DEPENDS_TARGET="toolchain libX11 libXext libXfixes libdrm"
+  DISPLAYSERVER_LIBVA="--enable-x11 --enable-glx --enable-egl --disable-wayland"
 else
   PKG_DEPENDS_TARGET="toolchain libdrm"
   DISPLAYSERVER_LIBVA="--disable-x11 --disable-glx --disable-wayland"
 fi
+
 
 PKG_CONFIGURE_OPTS_TARGET="--disable-silent-rules \
                            --disable-docs \

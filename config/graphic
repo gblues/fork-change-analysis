@@ -1,3 +1,7 @@
+[ -z "${OPENGL}" ] && OPENGL="no"
+[ -z "${OPENGLES}" ] && OPENGLES="no"
+[ -z "${VULKAN}" ] && VULKAN="no"
+
 if [ "${OPENGL}" = no ]; then
   OPENGL_SUPPORT="no"
 else
@@ -8,6 +12,12 @@ if [ "${OPENGLES}" = no ]; then
   OPENGLES_SUPPORT="no"
 else
   OPENGLES_SUPPORT="yes"
+fi
+
+if [ "${VULKAN}" = no ]; then
+  VULKAN_SUPPORT="no"
+else
+  VULKAN_SUPPORT="yes"
 fi
 
 get_graphicdrivers() {
@@ -120,6 +130,12 @@ get_graphicdrivers() {
   if listcontains "${GRAPHIC_DRIVERS}" "vmware"; then
     GALLIUM_DRIVERS+=" svga"
     XORG_DRIVERS+=" vmware"
+    COMPOSITE_SUPPORT="yes"
+  fi
+
+  if listcontains "${GRAPHIC_DRIVERS}" "nouveau"; then
+    GALLIUM_DRIVERS+=" nouveau"
+    XORG_DRIVERS+=" nouveau"
     COMPOSITE_SUPPORT="yes"
   fi
 

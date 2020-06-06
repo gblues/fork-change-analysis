@@ -129,15 +129,15 @@ PROMPT 1
 
 LABEL installer
   KERNEL /${KERNEL_NAME}
-  APPEND boot=UUID=${UUID_SYSTEM} installer quiet systemd.debug_shell vga=current
+  APPEND boot=UUID=${UUID_SYSTEM} installer quiet tty vga=current
 
 LABEL live
   KERNEL /${KERNEL_NAME}
-  APPEND boot=UUID=${UUID_SYSTEM} live quiet vga=current
+  APPEND boot=UUID=${UUID_SYSTEM} live quiet tty vga=current
 
 LABEL run
   KERNEL /${KERNEL_NAME}
-  APPEND boot=UUID=${UUID_SYSTEM} disk=UUID=${UUID_STORAGE} portable quiet
+  APPEND boot=UUID=${UUID_SYSTEM} disk=UUID=${UUID_STORAGE} tty portable quiet
 EOF
 
   cat << EOF > "${LE_TMP}/grub.cfg"
@@ -145,17 +145,54 @@ set timeout="25"
 set default="Installer"
 menuentry "Installer" {
 	search --set -f /KERNEL
-	linux /KERNEL boot=UUID=${UUID_SYSTEM} installer quiet systemd.debug_shell vga=current
+	linux /KERNEL boot=UUID=${UUID_SYSTEM} installer quiet tty vga=current
 }
 menuentry "Live" {
 	search --set -f /KERNEL
-	linux /KERNEL boot=UUID=${UUID_SYSTEM} grub_live quiet vga=current
+	linux /KERNEL boot=UUID=${UUID_SYSTEM} grub_live quiet tty vga=current
 }
 menuentry "Run" {
 	search --set -f /KERNEL
-	linux /KERNEL boot=UUID=${UUID_SYSTEM} disk=UUID=${UUID_STORAGE} grub_portable quiet
+	linux /KERNEL boot=UUID=${UUID_SYSTEM} disk=UUID=${UUID_STORAGE} tty grub_portable quiet
 }
 EOF
+
+  # Lakka - default = live = use medium for storage
+  if [ "$DISTRO" = "Lakka" ]; then
+    cat << EOF > "${LE_TMP}/syslinux.cfg"
+SAY Wait for live mode to start automatically in 5 seconds...
+SAY
+SAY Options
+SAY =======
+SAY live: boot ${DISTRO} using this USB memory device for storage
+SAY installer: permanently install ${DISTRO} to HDD/SSD
+SAY
+DEFAULT live
+TIMEOUT 50
+PROMPT 1
+
+LABEL live
+  KERNEL /${KERNEL_NAME}
+  APPEND boot=UUID=${UUID_SYSTEM} disk=UUID=${UUID_STORAGE} tty portable quiet
+
+LABEL installer
+  KERNEL /${KERNEL_NAME}
+  APPEND boot=UUID=${UUID_SYSTEM} installer quiet tty vga=current
+EOF
+
+    cat << EOF > "${LE_TMP}/grub.cfg"
+set timeout="25"
+set default="Live"
+menuentry "Live" {
+	search --set -f /KERNEL
+	linux /KERNEL boot=UUID=${UUID_SYSTEM} disk=UUID=${UUID_STORAGE} tty grub_portable quiet
+}
+menuentry "Installer" {
+	search --set -f /KERNEL
+	linux /KERNEL boot=UUID=${UUID_SYSTEM} installer quiet tty vga=current
+}
+EOF
+  fi
 
   mcopy "${LE_TMP}/syslinux.cfg" ::
 
@@ -289,7 +326,7 @@ echo "image: checking filesystem on part1..."
 fsck.fat -n "${LE_TMP}/part1.fat" >"${SAVE_ERROR}" 2>&1 || show_error
 
 # create virtual image
-if [ "${PROJECT}" = "Generic" ]; then
+if [ "${PROJECT}" = "Generic" -a "${CREATE_OVA}" = "yes" ]; then
   echo "image: creating open virtual appliance..."
   # duplicate ${DISK} so anything we do to it directly doesn't effect original
   dd if="${DISK}" of="${DISK_BASENAME}.tmp" bs=1M >"${SAVE_ERROR}" 2>&1 || show_error

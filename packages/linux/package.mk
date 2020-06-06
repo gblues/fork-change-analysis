@@ -23,14 +23,18 @@ case "$LINUX" in
     PKG_SOURCE_NAME="linux-$LINUX-$PKG_VERSION.tar.gz"
     ;;
   raspberrypi)
-    PKG_VERSION="f0e620550b8b422fef4adcabb2d0e8e69f1fec75" # 4.19.122
-    PKG_SHA256="33601014b658e2257a51c9b474bd590f75193e11cf78ac200fa5e6dea0caf6d8"
+    PKG_VERSION="3c235dcfe80a7c7ba360219e4a3ecb256f294376" # 4.19.83
+    PKG_SHA256="23a222d8864107b296b3bf580106421899964af879bb7f1c440e875e565fd6f3"
     PKG_URL="https://github.com/raspberrypi/linux/archive/$PKG_VERSION.tar.gz"
     PKG_SOURCE_NAME="linux-$LINUX-$PKG_VERSION.tar.gz"
     ;;
+  odroidxu3-5.4)
+    PKG_VERSION="7ed9082e87649dacb3819f6608c55614d10d6972"
+    PKG_URL="https://github.com/hardkernel/linux/archive/$PKG_VERSION.tar.gz"
+    ;;
   *)
-    PKG_VERSION="5.1.16"
-    PKG_SHA256="8a3e55be3e788700836db6f75875b4d3b824a581d1eacfc2fcd29ed4e727ba3e"
+    PKG_VERSION="5.1.18"
+    PKG_SHA256="6013e7dcf59d7c1b168d8edce3dbd61ce340ff289541f920dbd0958bef98f36a"
     PKG_URL="https://www.kernel.org/pub/linux/kernel/v5.x/$PKG_NAME-$PKG_VERSION.tar.xz"
     PKG_PATCH_DIRS="default"
     ;;
@@ -49,7 +53,7 @@ if [ "$PKG_BUILD_PERF" != "no" ] && grep -q ^CONFIG_PERF_EVENTS= $PKG_KERNEL_CFG
   PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET binutils elfutils libunwind zlib openssl"
 fi
 
-if [ "$TARGET_ARCH" = "x86_64" ]; then
+if [ "$TARGET_ARCH" = "x86_64" -o "$TARGET_ARCH" = "i386" ]; then
   PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET intel-ucode:host kernel-firmware elfutils:host pciutils"
 fi
 
@@ -127,10 +131,10 @@ makeinstall_host() {
 }
 
 pre_make_target() {
-  if [ "$TARGET_ARCH" = "x86_64" ]; then
+  if [ "$TARGET_ARCH" = "x86_64" -o "$TARGET_ARCH" = "i386" ]; then
     # copy some extra firmware to linux tree
     mkdir -p $PKG_BUILD/external-firmware
-      cp -a $(get_build_dir kernel-firmware)/{amdgpu,amd-ucode,i915,radeon,e100,rtl_nic} $PKG_BUILD/external-firmware
+      cp -a $(get_build_dir kernel-firmware)/{amdgpu,amd-ucode,i915,nvidia,radeon,e100,rtl_nic} $PKG_BUILD/external-firmware
 
     cp -a $(get_build_dir intel-ucode)/intel-ucode $PKG_BUILD/external-firmware
 
@@ -138,7 +142,7 @@ pre_make_target() {
     sed -i "s|CONFIG_EXTRA_FIRMWARE=.*|CONFIG_EXTRA_FIRMWARE=\"${FW_LIST}\"|" $PKG_BUILD/.config
   fi
 
-  kernel_make oldconfig
+  kernel_make olddefconfig
 
   # regdb (backward compatability with pre-4.15 kernels)
   if grep -q ^CONFIG_CFG80211_INTERNAL_REGDB= $PKG_BUILD/.config ; then
@@ -148,6 +152,7 @@ pre_make_target() {
 
 make_target() {
   kernel_make modules
+  touch modules.builtin.modinfo
   kernel_make INSTALL_MOD_PATH=$INSTALL/$(get_kernel_overlay_dir) modules_install
   rm -f $INSTALL/$(get_kernel_overlay_dir)/lib/modules/*/build
   rm -f $INSTALL/$(get_kernel_overlay_dir)/lib/modules/*/source
@@ -157,7 +162,7 @@ make_target() {
 
       # arch specific perf build args
       case "$TARGET_ARCH" in
-        x86_64)
+        x86_64|i386)
           PERF_BUILD_ARGS="ARCH=x86"
           ;;
         aarch64)

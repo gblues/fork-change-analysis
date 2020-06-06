@@ -20,3 +20,7 @@ fi
 PKG_CONFIGURE_OPTS_TARGET="--enable-static \
                            --disable-shared \
                            $PKG_FIXED_POINT"
+
+if [ "$DISTRO" = "Lakka" ]; then
+  PKG_BUILD_FLAGS="+pic"
+fi
